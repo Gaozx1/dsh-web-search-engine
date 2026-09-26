@@ -1,0 +1,62 @@
+# dsh-web-search-engine bundle patch —— 用多个搜索引擎替换 DSH 默认的搜索。
+#
+# 两件事：
+#   1) 插入插件行：向 ctx.web 注册 id 为 web-search-multi 的搜索 provider；
+#   2) 覆盖 web 行：把 searchProvider 指向它。
+#      patch 会整体替换该行的 config（不做深合并），所以 fetchProvider 必须一并重申。
+#
+# 改回默认搜索：把下面 web 行的 searchProvider 改成 deepseek-official，
+# 或在 profile 的 cordis.patch.yml 里再覆盖一次（用户层优先级更高）。
+
+- insert:
+    - id: web-search-multi
+      name: 'dsh-web-search-engine'
+      inject: [web]
+      config:
+        # merge=并行问所有引擎并把结果混合；fallback=按顺序试，第一个出结果就用。
+        mode: merge
+        # 引擎顺序（混合模式下决定同名次结果的先后）：bing、duckduckgo、mojeek、google、brave。
+        engines: [bing, duckduckgo, mojeek, google]
+        # 每个引擎取多少条；混合后总条数更多，最终由 web_search 工具再截一次。
+        maxResults: 6
+        # 单次搜索的总预算（毫秒）：到点就用已经拿到的结果。
+        timeoutMs: 12000
+        language: zh-CN
+        # Bing 的 mkt 市场参数，留空按出口 IP 判断（如 zh-CN、en-US）。
+        region: ''
+        safeSearch: true
+        # 全局出站代理，留空直连。各引擎还能用 <engine>.proxy 单独指定。
+        proxy: ''
+        bing:
+          baseUrl: 'https://www.bing.com'
+          # 结果页解析不到时，退回 Bing 的 RSS 结果流。
+          rss: true
+        duckduckgo:
+          baseUrl: 'https://html.duckduckgo.com'
+          region: cn-zh
+          # DuckDuckGo 在直连网络下通常不可达，这里预填了本机代理（Clash 默认端口）。
+          # 不用代理就清空；不填则回落到全局 proxy。
+          proxy: 'http://127.0.0.1:7890'
+        mojeek:
+          baseUrl: 'https://www.mojeek.com'
+          # Mojeek 对部分出口 IP 会要求人机验证，遇到时它只报错、不影响其它引擎。
+          proxy: ''
+        google:
+          # 没配 apiKey + cx 时 Google 会被跳过（抓页已被它的 JS 门挡住）。
+          apiKey: ''
+          apiKeyEnv: GOOGLE_CSE_API_KEY
+          cx: ''
+          cxEnv: GOOGLE_CSE_CX
+          allowHtmlFallback: false
+          # www.googleapis.com 直连不通时填代理。
+          proxy: 'http://127.0.0.1:7890'
+        brave:
+          # 需要 Brave Search API key，不填则跳过。
+          apiKey: ''
+          apiKeyEnv: BRAVE_SEARCH_API_KEY
+
+- id: web
+  name: '@deepseek-ai/dsh-web'
+  config:
+    searchProvider: web-search-multi
+    fetchProvider: http

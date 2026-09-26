@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Bing / Google 搜索",
+    "description": "用 Bing 和 Google 替换默认的 DeepSeek 网络搜索，引擎顺序、超时、出站代理都可配置。"
+  }
+}

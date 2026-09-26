@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Multi-engine Web Search",
+    "description": "Replaces the default DeepSeek web search with Bing and Google, with a configurable engine order, timeout, and outbound proxy."
+  }
+}

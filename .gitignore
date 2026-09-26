@@ -1,0 +1,18 @@
+# 依赖：schemastery 由 profile 提供，装插件时不需要本地 node_modules
+node_modules/
+package-lock.json
+.pnpm-debug.log*
+
+# 导出产物
+*.zip
+*.tgz
+
+# 工作区临时目录（记忆 / 图像输出 / 发布区）
+.whale-craft/
+
+# 编辑器 / 系统
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
