@@ -1,5 +1,7 @@
 # dsh-web-search-engine
 
+[![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 用 **Bing / DuckDuckGo / Mojeek / Google / Brave** 替换 DeepSeek Harness（DSH）默认的网络搜索，
 默认把**多个引擎的结果混合**后交给模型，并带一个可视化设置页。
 
@@ -61,6 +63,15 @@ Google 对非浏览器客户端**统一返回"需要 JavaScript"的占位页**�
 ```
 plugin_manager action=install_bundle target=<本目录绝对路径>
 ```
+
+或者直接从 GitHub 拿：
+
+```
+git clone https://github.com/Gaozx1/dsh-web-search-engine.git
+```
+
+（`node_modules` 未入库：`@deepseek-ai/schemastery` 由 profile 自带；
+要在离线环境里装，先在本目录跑一次 `npm install`。）
 
 安装即启用，patch 会同时插入插件行、把 `web` 行指向新 provider。
 装完**刷新一次页面**（F5），客户端半边才会进 Web 的模块图、设置页才会出现。
