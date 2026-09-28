@@ -15,7 +15,9 @@
       config:
         # merge=并行问所有引擎并把结果混合；fallback=按顺序试，第一个出结果就用。
         mode: merge
-        # 引擎顺序（混合模式下决定同名次结果的先后）：bing、duckduckgo、mojeek、google、brave。
+        # 引擎顺序（混合模式下决定同名次结果的先后）：
+        #   HTTP 抓取：bing、duckduckgo、mojeek、google、brave
+        #   浏览器取数：brave-web、ddg-web、google-web（需 browser.enabled）
         engines: [bing, duckduckgo, mojeek, google]
         # 每个引擎取多少条；混合后总条数更多，最终由 web_search 工具再截一次。
         maxResults: 6
@@ -26,6 +28,8 @@
         region: ''
         safeSearch: true
         # 全局出站代理，留空直连。各引擎还能用 <engine>.proxy 单独指定。
+        # 注意：Bing 会忽略这个值始终直连——走代理会落到 www.bing.com（国际版），
+        # 同一个中文查询返回的结果集不同且慢一个数量级。要强制走代理请设 bing.proxy。
         proxy: ''
         bing:
           baseUrl: 'https://www.bing.com'
@@ -54,6 +58,26 @@
           # 需要 Brave Search API key，不填则跳过。
           apiKey: ''
           apiKeyEnv: BRAVE_SEARCH_API_KEY
+        browser:
+          # 浏览器取数：用本机 Chrome/Edge 渲染结果页再提取，给 HTTP 拿不到的引擎用。
+          # 开启后 brave-web（无需 key，最划算）可用。
+          enabled: false
+          # 浏览器可执行文件；留空自动探测 Chrome → Edge。
+          exe: ''
+          # 无头模式（不弹窗口）。关掉会弹出一个浏览器窗口。
+          headless: true
+          # google-web 用有头模式：实测只有有头能过 Google 的自动化检测。
+          headlessForGoogle: false
+          # 浏览器专用代理；留空用上面的全局 proxy。
+          proxy: ''
+          # 持久 profile 目录，填了可跨搜索复用 Cookie。
+          profileDir: ''
+          # 空闲多久后自动关掉浏览器（毫秒）；0 = 不自动关。
+          idleMs: 120000
+          # 单个浏览器引擎最多等多久出结果（毫秒）。
+          waitMs: 8000
+          # 把浏览器调度日志打到 Host 控制台。
+          verbose: false
 
 - id: web
   name: '@deepseek-ai/dsh-web'
