@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "Bing / Google 搜索",
-    "description": "用 Bing 和 Google 替换默认的 DeepSeek 网络搜索，引擎顺序、超时、出站代理都可配置。"
+    "title": "多引擎搜索",
+    "description": "用 Bing、DuckDuckGo、Mojeek、Brave 与 Google 混合替代默认网络搜索；支持无头浏览器取数、按引擎配代理，并带设置页。"
   }
 }

@@ -36,8 +36,8 @@
 | `mojeek` | 抓 `mojeek.com/search`（独立索引） | ⚠️ 部分出口 IP 被要求人机验证（403/Captcha），只报错不影响其它引擎 |
 | `google` | 官方 Programmable Search JSON API（需 key + cx） | ❌ 抓页被 Google 的 JS 门挡住；官方 API **已对新客户关闭**（见下） |
 | `brave` | 官方 Brave Search API（需 key） | ⚠️ 未实测（需要 key） |
-| `brave-web` | **无头浏览器**渲染 `search.brave.com` | ✅ 无需 key，1.5~3.5s 出 20 条；搜太频繁会被限流（见下） |
-| `ddg-web` | **无头浏览器**渲染 `duckduckgo.com` | ✅ 比 HTML 版稳，2.4~9s |
+| `brave-web` | **无头浏览器**渲染 `search.brave.com` | ❌ 2026-10-19 复测：返回空页面 / 0 条（该出口 IP 被持续拦截，20 天未恢复）；代码保留，换 IP 可再试 |
+| `ddg-web` | **无头浏览器**渲染 `duckduckgo.com` | ✅ 比 HTML 版稳，2.4~9s；0.2.1 + Chrome 155 复测仍出 10 条 |
 | `google-web` | **无头浏览器**渲染 `google.com` | ⚠️ 只有**有头**模式能过，且连续搜索会被限流 |
 
 每个引擎都能单独指定代理（`<engine>.proxy`），没指定就回落到全局 `proxy`。
@@ -203,7 +203,18 @@ git clone https://github.com/Gaozx1/dsh-web-search-engine.git
 
 ## 验证状态
 
-在作者本机 profile（DSH 0.1.7-rc.1，Windows + Chrome 153）上实测通过：
+### DSH 0.2.1-alpha.4（Windows + Chrome 155）
+
+- Host 半边**无需改动即可运行**：`ctx.web.registerSearchProvider` 的
+  `WebSearchProvider` 契约（`id` / `available()` / `search(request, signal)`）与 0.1.7 一致；
+  `schemastery` 3.18.5 仍提供 `volatile()` / `role()`；`settings/describe` 与
+  `settings/update` 这两个 remote 端点签名未变。
+- 实测：`bing` + `duckduckgo` + `ddg-web` 混合返回正常；`ddg-web` 在 Chrome 155 上仍出 10 条。
+- 配置在 profile patch 里改完**下一次搜索立刻生效**（已用「只开 ddg-web + 关浏览器取数」
+  的临时配置验证过：报错精确变成"浏览器取数未开启"，说明热加载确实发生）。
+- 设置页需要**刷新页面**才会出现（客户端模块在页面启动时进模块图）。
+
+### DSH 0.1.7-rc.1（Windows + Chrome 153）
 
 - 混合模式：Bing + DuckDuckGo 的结果**交替出现**，1.4s 左右返回，比单引擎信息面更宽。
 - **浏览器取数**：`brave-web` 单次 1.5~3.5s 出 20 条；连续 5 次查询不限流（0.7~2.7s）。
@@ -213,13 +224,12 @@ git clone https://github.com/Gaozx1/dsh-web-search-engine.git
 - Bing 直连 vs 走代理的差异（见上）已复现并修掉：同一个中文查询直连/走代理都返回正确结果。
 - **相关性守卫**：查询带 ASCII 词但结果全不沾边时该引擎判失败（实测「怎么给 dsh 写插件」
   被拦后由 DuckDuckGo 顶上，返回 8 条正确结果）；纯中文查询不拦，避免误杀。
-  单元测试 8/8 通过（见提交记录里的用例）。
+  单元测试 8/8 通过。
 - URL 去重跨引擎生效（`www.deepseek.com/harness/en/` 与 `deepseek.com/harness/en` 归一）。
 - DuckDuckGo 经代理可用；Mojeek 被要求验证码时只报错、不拖垮整次搜索。
 - 单引擎不可用（例如 DuckDuckGo 不配代理）时，混合模式仍在总预算内返回其它引擎的结果。
 - 按顺序模式行为与之前一致；`preferOfficial` 开着时官方 provider 直接给出结果，
   `officialProviderId` 指向不存在的 id 时自动回退到引擎。
-- 配置热更新：改 profile patch 里的行配置后，下一次搜索立刻按新配置执行。
 - Google 官方 API 路径用本地假服务验证了 URL 构造、JSON 解析与去重。
 
 未验证 / 有保留：
@@ -228,11 +238,13 @@ git clone https://github.com/Gaozx1/dsh-web-search-engine.git
   浏览器路径也被真验证码挡住。
 - `brave` / `google` 的**官方 API** 未实测（需要 key）；JSON 解析逻辑两者同构。
 - 真实 Google API key 下的线上调用。
-- 被限流后的恢复时间只测到"3 分钟仍未恢复"，未测出确切时长。
+- **`brave-web` 已不可用**：截至 2026-10-19 实测（Chrome 155 + 同一出口），
+  `search.brave.com` 返回空 body、0 条结果，20 天后仍未恢复。看起来不是临时限流，
+  而是该出口 IP 被持续拦截（也可能是新版 Chrome 的无头特征被识别）。用 `ddg-web` 代替。
 - 纯中文查询的跑偏（Bing 把「怎么」当词）不会自动拦截，属于已知局限。
 
 > 客户端半边改动后**必须刷新页面**才会生效（Web 的模块图在页面加载时确定）；
-> Host 半边改文件则由 HMR 热重载，不必重启。
+> Host 半边改文件则由 HMR 热重载，不必重启（已验证 profile patch 的改动会立即生效）。
 
 ## 排错
 
